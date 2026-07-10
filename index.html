@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Direct line · leave me a message</title>
+<meta name="description" content="Send a message straight to my inbox. Static page, serverless backend, no middlemen." />
+<meta property="og:title" content="Direct line" />
+<meta property="og:description" content="Leave me a message — it routes straight to my inbox." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0B1220;         /* deep navy background */
+    --surface: #111A2C;     /* card */
+    --surface-2: #17233A;   /* inputs */
+    --line: #24334E;        /* borders */
+    --text: #E8EDF4;        /* primary text */
+    --muted: #8B98AC;       /* secondary text */
+    --accent: #4FD6C4;      /* pool-water teal */
+    --accent-ink: #062521;  /* text on accent */
+    --amber: #E8B44F;       /* warnings */
+    --red: #E86A6A;         /* errors */
+    --radius: 10px;
+    --font-display: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
+    --font-mono: "IBM Plex Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--ink);
+    background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(79, 214, 196, 0.08), transparent);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    min-height: 100vh;
+    display: grid;
+    place-items: start center;
+    padding: clamp(24px, 6vw, 64px) 20px 64px;
+  }
+  main { width: 100%; max-width: 560px; }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 5.5vw, 38px);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+  }
+  .status {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(79, 214, 196, 0.7);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .dot { animation: pulse 2.4s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: 0.45; } }
+  }
+
+  form {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: clamp(20px, 4vw, 28px);
+  }
+  .field { margin-bottom: 18px; }
+  label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  label .opt { color: #5B6880; text-transform: none; letter-spacing: 0; }
+  input[type="text"], input[type="email"], textarea {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    padding: 10px 12px;
+    transition: border-color 120ms ease;
+  }
+  textarea { min-height: 130px; resize: vertical; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-color: var(--accent);
+  }
+  .counter {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  /* honeypot — hidden from humans, tempting to bots */
+  .hp { position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden; }
+
+  button[type="submit"] {
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    padding: 13px;
+    cursor: pointer;
+    transition: filter 120ms ease, transform 120ms ease;
+  }
+  button[type="submit"]:hover { filter: brightness(1.08); }
+  button[type="submit"]:active { transform: scale(0.99); }
+  button[type="submit"]:disabled { filter: saturate(0.4) brightness(0.8); cursor: wait; }
+
+  .error {
+    display: none;
+    margin-top: 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--red);
+  }
+  .error.show { display: block; }
+
+  /* ── the signature: authorization stamp ─────────────────── */
+  .stamp {
+    display: none;
+    margin-top: 24px;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(79,214,196,0.10), rgba(79,214,196,0.03));
+    padding: 22px 24px;
+  }
+  .stamp.show { display: block; }
+  @media (prefers-reduced-motion: no-preference) {
+    .stamp.show { animation: stamp-in 320ms cubic-bezier(0.2, 1.4, 0.4, 1); }
+    @keyframes stamp-in {
+      from { transform: scale(1.15) rotate(-2deg); opacity: 0; }
+      to   { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+  }
+  .stamp .code {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .stamp .verdict {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+  .stamp p { color: var(--muted); font-size: 14px; margin-top: 8px; }
+  .stamp .footnote {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #5B6880;
+    margin-top: 12px;
+  }
+
+  details {
+    margin-top: 28px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  summary {
+    cursor: pointer;
+    padding: 14px 18px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    list-style: none;
+  }
+  summary::before { content: "▸ "; color: var(--accent); }
+  details[open] summary::before { content: "▾ "; }
+  details .body {
+    padding: 0 18px 16px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  details .body code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--text);
+  }
+  details .body p + p { margin-top: 8px; }
+
+  footer {
+    margin-top: 28px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #5B6880;
+  }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Direct line // message terminal</p>
+  <h1>Leave me a message.</h1>
+  <p class="status"><span class="dot" aria-hidden="true"></span> channel open — routes straight to my inbox</p>
+
+  <form id="msg-form" novalidate>
+    <div class="field">
+      <label for="f-name">From</label>
+      <input id="f-name" name="name" type="text" maxlength="80" required autocomplete="name" placeholder="Your name or handle" />
+    </div>
+    <div class="field">
+      <label for="f-contact">Reply-to <span class="opt">(optional — only if you want an answer back)</span></label>
+      <input id="f-contact" name="contact" type="text" maxlength="120" autocomplete="email" placeholder="Email, GitHub handle, anywhere" />
+    </div>
+    <div class="field">
+      <label for="f-msg">Message</label>
+      <textarea id="f-msg" name="message" maxlength="1200" required placeholder="Say anything — a question about swimpractices, the payments world, or just hello."></textarea>
+      <div class="counter"><span id="count">0</span> / 1200</div>
+    </div>
+
+    <!-- honeypot: real people never see or fill this -->
+    <div class="hp" aria-hidden="true">
+      <label for="f-company">Company</label>
+      <input id="f-company" name="company" type="text" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <button type="submit" id="send-btn">Send message</button>
+    <p class="error" id="err" role="alert"></p>
+  </form>
+
+  <div class="stamp" id="stamp" role="status">
+    <div class="code">MSG 0210 · RESP 00</div>
+    <div class="verdict">APPROVED</div>
+    <p>Delivered. If you left a reply-to, expect a response — human, not automated.</p>
+    <p class="footnote">// response codes borrowed from the payment networks I used to certify against</p>
+  </div>
+
+  <details>
+    <summary>how this page works</summary>
+    <div class="body">
+      <p>Static HTML on GitHub Pages — no server rendering this page. Your message goes through a small
+      <code>MessageAdapter</code> interface with two interchangeable backends:</p>
+      <p><code>firestore</code> → a direct, rules-secured write to a Firestore collection (create-only; nothing on this page can read messages back).</p>
+      <p><code>aws</code> → a POST to an API Gateway + Lambda endpoint that validates, rate-limits, and stores/forwards.</p>
+      <p>One config flag switches between them. No third-party form services, no trackers, no analytics scripts.</p>
+    </div>
+  </details>
+
+  <footer>
+    <a href="https://github.com/mlabenski">← back to my GitHub</a>
+  </footer>
+</main>
+
+<script type="module">
+/* ═══════════════════════════════════════════════════════════════
+   CONFIG — the only block you need to edit.
+   backend: "firestore" | "aws"
+   ═══════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  backend: "aws",
+
+  firestore: {
+    // From Firebase console → Project settings → Your apps → Web app.
+    // These values are PUBLIC by design; security lives in firestore.rules.
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    collection: "messages",
+  },
+
+  aws: {
+    // API Gateway invoke URL or Lambda Function URL.
+    endpoint: "https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/messages",
+  },
+};
+
+/* ── Adapters: same interface, swappable backends ─────────────── */
+const adapters = {
+  firestore: {
+    async send(payload) {
+      const [{ initializeApp }, { getFirestore, collection, addDoc, serverTimestamp }] =
+        await Promise.all([
+          import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+          import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"),
+        ]);
+      const app = initializeApp(CONFIG.firestore);
+      const db = getFirestore(app);
+      await addDoc(collection(db, CONFIG.firestore.collection), {
+        ...payload,
+        createdAt: serverTimestamp(),
+      });
+    },
+  },
+
+  aws: {
+    async send(payload) {
+      const res = await fetch(CONFIG.aws.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Backend responded ${res.status}`);
+    },
+  },
+};
+
+/* ── Form logic ────────────────────────────────────────────────── */
+const form = document.getElementById("msg-form");
+const btn = document.getElementById("send-btn");
+const err = document.getElementById("err");
+const stamp = document.getElementById("stamp");
+const msgField = document.getElementById("f-msg");
+const counter = document.getElementById("count");
+const pageLoadedAt = Date.now();
+
+msgField.addEventListener("input", () => {
+  counter.textContent = String(msgField.value.length);
+});
+
+function fail(message) {
+  err.textContent = "RESP 05 — declined: " + message;
+  err.classList.add("show");
+  btn.disabled = false;
+  btn.textContent = "Send message";
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  err.classList.remove("show");
+
+  const name = form.name.value.trim();
+  const contact = form.contact.value.trim();
+  const message = form.message.value.trim();
+
+  // Validation — schemas are contracts.
+  if (!name || !message) return fail("name and message are required.");
+  if (name.length > 80 || contact.length > 120 || message.length > 1200)
+    return fail("a field exceeds its maximum length.");
+  if (form.company.value) return; // honeypot tripped: silently drop
+  if (Date.now() - pageLoadedAt < 2500)
+    return fail("that was fast — give it a second and try again.");
+
+  // Client-side throttle: 1 message / 60s per browser.
+  const last = Number(localStorage.getItem("dl:lastSend") || 0);
+  if (Date.now() - last < 60_000)
+    return fail("one message per minute — the line is open, not flooded.");
+
+  btn.disabled = true;
+  btn.textContent = "Transmitting…";
+
+  try {
+    await adapters[CONFIG.backend].send({
+      name,
+      contact: contact || null,
+      message,
+      ua: navigator.userAgent.slice(0, 160),
+      page: location.href,
+    });
+    localStorage.setItem("dl:lastSend", String(Date.now()));
+    form.reset();
+    counter.textContent = "0";
+    form.hidden = true;
+    stamp.classList.add("show");
+    stamp.scrollIntoView({ behavior: "smooth", block: "center" });
+  } catch (ex) {
+    console.error(ex);
+    fail("couldn't reach the backend. Try again in a moment.");
+  }
+});
+</script>
+</body>
+</html>
